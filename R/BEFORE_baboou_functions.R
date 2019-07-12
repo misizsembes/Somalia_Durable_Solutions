@@ -546,7 +546,7 @@ prep_stat_tests <- function(dataa,agg_varble, i, pop_group_var){
   agg_and_var <- c(agg_varble, var_name)
   agg_varble_index <- grep(paste0("^",agg_varble,"$"), colnames(dataa))
   agg_pop_group <- as.data.frame(str_split_fixed(unique(paste0( unlist(dataa[[grep(paste0("^",agg_varble,"$"), colnames(dataa))]]) ,";", unlist(dataa[[grep(paste0("^",pop_group_var,"$"), colnames(dataa))]]))),";",2))
-  if(all(is.na(dataa[,i]))==TRUE){ #IF COLUMN IS BLANK
+  if(all(is.na(dataa[[i]]))==TRUE){ #IF COLUMN IS BLANK
     print("ALL NA")
     uuid_na <- dataa[grep("uuid", colnames(dataa))]
     note_na <- as.data.frame(rep(NA, nrow(as.data.frame(dataa)) ))
@@ -555,11 +555,11 @@ prep_stat_tests <- function(dataa,agg_varble, i, pop_group_var){
     type <- rep("NA",nrow(bianized))
     bianized <- data.frame(bianized,type)
     ###IF NUMERIC
-  } else if (is.double(dataa[[i]])  |  max(unique(as.numeric(dataa[[i]])),na.rm = TRUE)>=2){
+  } else if (is.double(dataa[[i]])  |  (max(unique(as.numeric(dataa[[i]])),na.rm = TRUE)>=2 && max(nchar(rdss_data[[9]]))<10) ){
     print("NUMERIC")
     uuid <- dataa[grep("uuid",colnames(dataa))]
     agg <- dataa[grep(agg_varble,colnames(dataa))]
-    group <- dataa[grep(pop_group_var,colnames(dataa))]
+    group <- dataa[grep(paste0("^",pop_group_var,"$"),colnames(dataa))]
     data_get <- as.data.frame(dataa[i])
     bianized <- data.frame(uuid,agg,group,data_get)
     colnames(bianized)[ncol(bianized)] <- paste0(colnames(dataa[i]),";",colnames(bianized)[ncol(bianized)])
@@ -624,7 +624,7 @@ prep_stat_tests <- function(dataa,agg_varble, i, pop_group_var){
     colnames(bianized)[ncol(bianized)] <- "tlt_resp"
     bianized[ncol(bianized)] <- NULL
     bianized <- merge(id_columns,bianized, by="uuid", all.x=TRUE)
-    for(k in (grep(pop_group_var,colnames(bianized))+1) : ncol(bianized)) {
+    for(k in (grep(paste0("^",pop_group_var,"$"),colnames(bianized))+1) : ncol(bianized)) {
       colnames(bianized)[k] <- paste0(colnames(dataa[i]),".",colnames(bianized)[k])
     }
     type <- rep("categorical",nrow(bianized))
@@ -632,9 +632,13 @@ prep_stat_tests <- function(dataa,agg_varble, i, pop_group_var){
   }
   return(bianized)
 }
-#categorical <- prep_stat_tests(rdss_data, "all",77, "has_your_household_always_lived_in_the_settlement_you_are_currently_living_in")
-#NAs <- prep_stat_tests(rdss_data, "all",17, "has_your_household_always_lived_in_the_settlement_you_are_currently_living_in")
-#numeric <- prep_stat_tests(rdss_data, "all",36, "has_your_household_always_lived_in_the_settlement_you_are_currently_living_in")
+apple <- prep_stat_tests(rdss_data, geo_aggregation_indicator,9, grouping_indicator)
+
+grep("what_is_the_name_of_the_village_settlement_not_the_idp_site_name",colnames(rdss_data))
+max(nchar(dataa[[i]]))
+max(nchar(rdss_data[[9]]))
+is.character(rdss_data[[9]]) && max(nchar(rdss_data[[9]]))<10
+
 
 ############FUNCTION: REMOVE SPECIAL CHARACTERS FROM COLNAMES############
 #datasett == Name of the dataframe that needs the headers "cleaned"

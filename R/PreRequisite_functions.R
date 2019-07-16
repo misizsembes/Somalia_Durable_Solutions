@@ -555,7 +555,7 @@ prep_stat_tests <- function(dataa,agg_varble, i, pop_group_var){
     type <- rep("NA",nrow(bianized))
     bianized <- data.frame(bianized,type)
     ###IF NUMERIC
-  } else if (is.double(dataa[[i]])  |  (max(unique(as.numeric(dataa[[i]])),na.rm = TRUE)>=2 && max(nchar(rdss_data[[9]]))<10) ){
+  } else if (is.double(dataa[[i]])  |  (max(unique(as.numeric(dataa[[i]])),na.rm = TRUE)>=2 && max(nchar(dataa[[9]]))<10) ){
     print("NUMERIC")
     uuid <- dataa[grep("uuid",colnames(dataa))]
     agg <- dataa[grep(agg_varble,colnames(dataa))]
@@ -795,14 +795,17 @@ ttest_go <- function(dataa,grouping_var){
   #FIRST VARIABLE TO CONDUCT TTEST
   i <- ncol(for_ttest)
   ttest_var_name <- colnames(for_ttest)[i]
-  #ENSURE NO NAs
-  for_ttest <- for_ttest %>% dplyr::filter( !is.na(UQ(as.name(ttest_var_name))))
   #GROUPING COLUMN INDEX
   ttest_grouping_var <- grep(paste0("^",grouping_var,"$"), colnames(for_ttest))
-  print(for_ttest) 
+  ttest_uuid <-  grep("uuid", colnames(for_ttest))
+  #ENSURE NO NAs
+  for_ttest <- for_ttest %>% dplyr::filter( !is.na(UQ(as.name(ttest_var_name)))) #%>% dcast(for_ttest[,ttest_grouping_var]~ for_ttest[,ttest_uuid] , fun.aggregate = sum,value.var= colnames(for_ttest)[ncol(for_ttest)], na.rm=TRUE)
+  ttest_pivot <- for_ttest %>% dplyr:: select(c(colnames(for_ttest)[ttest_grouping_var],colnames(for_ttest)[ncol(for_ttest)])) %>% 
+    group_by_(c(colnames(for_ttest)[ttest_grouping_var])) %>%
+    summarise_all(funs(sum), na.rm = TRUE)
   #TEST IF GROUPING VAR HAS MORE THAN 1 GROUP
-  if( nrow(unique(for_ttest[ttest_grouping_var]))<2 ){
-    print("LESS THAN 2 GROUPING CATEGORIES")
+  if( nrow(unique(for_ttest[ttest_grouping_var]))<2 |any(ttest_pivot[2]==0)){
+    print("LESS THAN 2 GROUPING CATEGORIES OR NO POSITIVE NUMBERS IN ONE GROUP")
     question_name <- NA
     group1_sample_size <- NA
     group2_sample_size <- NA
@@ -829,15 +832,12 @@ ttest_go <- function(dataa,grouping_var){
     group1_mean <-ifelse(is.na( mean(group1_mean[[i]],na.rm = TRUE)),0,  mean(group1_mean[[i]],na.rm = TRUE) )
     group2_mean <- for_ttest %>% dplyr:: filter(UQ(as.name(grouping_var)) == group2_name) 
     group2_sample_size <- sum(ifelse(is.na( group2_mean[[i]]),0, 1 ))
-    print(group1_sample_size)
-    print(group2_sample_size)
     group2_mean <- ifelse(is.na(mean(group2_mean[[i]],na.rm = TRUE)),0,mean(group2_mean[[i]],na.rm = TRUE))
     group1_sd <- for_ttest %>% dplyr:: filter(UQ(as.name(grouping_var)) == group1_name) 
     group1_sd <- ifelse(is.na(sd(group1_sd[[i]],na.rm = TRUE)), 0, sd(group1_sd[[i]],na.rm = TRUE))
     group2_sd <- for_ttest %>% dplyr:: filter(UQ(as.name(grouping_var)) == group2_name) 
     group2_sd <- ifelse(is.na(sd(group2_sd[[i]],na.rm = TRUE)), 0, sd(group2_sd[[i]],na.rm = TRUE))
     ttest_result <- t.test(for_ttest[,i]~for_ttest[[ttest_grouping_var]])
-    print(ttest_result)
     ttest_stat <- ttest_result$statistic
     ttest_pval <- ttest_result$p.value
     lower_confid_interval <- ttest_result$conf.int[1]
@@ -845,7 +845,6 @@ ttest_go <- function(dataa,grouping_var){
     ttest_summary <- data.frame(question_name,group1_sample_size,group2_sample_size,group1_name,group2_name,group1_mean,group2_mean,group1_sd,group2_sd, ttest_stat,ttest_pval,lower_confid_interval,upper_confid_interval)
     #CREATE COLUMN OF SIGNIFICANT RESULTS AND IDENTIFY THE GROUP WITH THE LARGER MEAN
     ttest_summary$stat_sig_larger_group <- ifelse(ttest_summary$ttest_pval<=.05 & ttest_summary$group1_mean>ttest_summary$group2_mean, as.character(ttest_summary$group1_name),ifelse(ttest_summary$ttest_pval<=.05 & ttest_summary$group1_mean<ttest_summary$group2_mean, as.character(ttest_summary$group2_name),""))
-    print(ttest_summary)
   }
   return(ttest_summary)
 }
@@ -909,8 +908,9 @@ chi2_tests <- function(cate_data, group_var){
 ttest_loop <- function(ttest_data,group_var){
   ttest_results_go <- list()
   for(d in 1:length(ttest_data)){
-    ttest_results_go[[d]] <- ttest_go(ttest_data[[d]],group_var)
-  }
+   print(d)
+      ttest_results_go[[d]] <- ttest_go(ttest_data[[d]],group_var)
+      }
   ttest_summary  <- do.call(rbind.data.frame, ttest_results_go)
   ttest_summary <- ttest_summary %>% dplyr::filter(!is.na(group1_name))
   return(ttest_summary)

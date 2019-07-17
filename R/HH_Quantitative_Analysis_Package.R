@@ -9,6 +9,8 @@ dataset <- "rdss"
 first_demo_col_name<- "males_0_5_months"
 last_demo_col_name <- "unaccompanied_or_separated_girls"
 last_pop_demo_col_name <- "females_60_or_older"
+dependent_persons <- FALSE
+independent_persons <- FALSE
 
 #DEFINE GEOGRAPHIC AGGREGATION CATEGORY: If none; then "all"
 geo_aggregation_indicator <- "all"
@@ -44,9 +46,9 @@ agged_demos <- agg_demographics(data_file, grouping_indicator ,geo_aggregation_i
                                 last_demo_col_name, 
                                 first_demo_col_name,
                                 last_pop_demo_col_name,
-                                FALSE ,
-                               FALSE)
-write.csv(agged_demos,paste0(dataset,"agged_demos.csv"))
+                                dependent_persons ,
+                                dependent_persons)
+write.csv(agged_demos,paste0(dataset,"_","agged_demos.csv"))
 
 ############STATISTICAL TESTS###############
 #####PREPARE DATA FOR STATISTICAL TESTS

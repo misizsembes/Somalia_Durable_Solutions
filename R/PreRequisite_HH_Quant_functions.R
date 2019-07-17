@@ -479,7 +479,7 @@ agg_demographics <- function(datasett,group,agg_level,first_demo_indicator,last_
     dplyr:: select_all() %>%
     group_by_at(c(agg_level,group)) %>%
     summarise_all(funs(sum), na.rm = TRUE)
-  #RENAME SUMS
+  #RENAME SUMS 
   names(agg_demographic)[grep(paste0("^",first_demo_indicator,"$"),colnames(agg_demographic)):ncol(agg_demographic)] <- paste0("sum_",names(agg_demographic)[grep(paste0("^",first_demo_indicator,"$"),colnames(agg_demographic)):ncol(agg_demographic)])
   #DEPENDENCY RATIO
   if( dependent_people == FALSE | independent_people == FALSE){
@@ -492,11 +492,15 @@ agg_demographics <- function(datasett,group,agg_level,first_demo_indicator,last_
   last_demo_tobe_aggregated <- grep(paste0("sum_",last_demo_indicator),colnames(agg_demographic))
   ncol_agg_demo_sums <- ncol(agg_demographic)
   #CALCULATE PROPORTION COLUMNS
-  for(i in first_demo_tobe_aggregated:last_demo_tobe_aggregated ){
-    agg_demographic[,(ncol_agg_demo_sums+i-(first_demo_tobe_aggregated-1))] <- agg_demographic[i]/agg_demographic[grep("tlt_people",colnames(agg_demographic))]
+  print(first_demo_indicator)
+  print(last_demo_tobe_aggregated)
+print(last_demo_tobe_aggregated-first_demo_tobe_aggregated)
+for(i in 1 :((last_demo_tobe_aggregated-first_demo_tobe_aggregated)+1) ){
+  print(i)  
+  agg_demographic[,(grep("tlt_people",colnames(agg_demographic))+i)] <- agg_demographic[i]/agg_demographic[grep("tlt_people",colnames(agg_demographic))]
   }
   #RENAME DEMOGRAPHIC PROPORTION INDICATORS
-  names(agg_demographic)[first_demo_tobe_aggregated:last_demo_tobe_aggregated] <- names(agg_demographic)[(ncol_agg_demo_sums+1):ncol(agg_demographic)] 
+   names(agg_demographic)[first_demo_tobe_aggregated:last_demo_tobe_aggregated] <- names(agg_demographic)[(ncol_agg_demo_sums+1):ncol(agg_demographic)] 
   names(agg_demographic)[(ncol_agg_demo_sums+1):ncol(agg_demographic)] %<>%
     gsub("sum_", "pr_", .) 
   names(agg_demographic) <- names(agg_demographic) %<>%

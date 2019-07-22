@@ -479,7 +479,7 @@ agg_demographics <- function(datasett,group,agg_level,first_demo_indicator,last_
     dplyr:: select_all() %>%
     group_by_at(c(agg_level,group)) %>%
     summarise_all(funs(sum), na.rm = TRUE)
-  #RENAME SUMS 
+  #RENAME SUMS
   names(agg_demographic)[grep(paste0("^",first_demo_indicator,"$"),colnames(agg_demographic)):ncol(agg_demographic)] <- paste0("sum_",names(agg_demographic)[grep(paste0("^",first_demo_indicator,"$"),colnames(agg_demographic)):ncol(agg_demographic)])
   #DEPENDENCY RATIO
   if( dependent_people == FALSE | independent_people == FALSE){
@@ -492,27 +492,24 @@ agg_demographics <- function(datasett,group,agg_level,first_demo_indicator,last_
   last_demo_tobe_aggregated <- grep(paste0("sum_",last_demo_indicator),colnames(agg_demographic))
   ncol_agg_demo_sums <- ncol(agg_demographic)
   #CALCULATE PROPORTION COLUMNS
-  print(first_demo_indicator)
-  print(last_demo_tobe_aggregated)
-print(last_demo_tobe_aggregated-first_demo_tobe_aggregated)
-for(i in 1 :((last_demo_tobe_aggregated-first_demo_tobe_aggregated)+1) ){
-  print(i)  
-  agg_demographic[,(grep("tlt_people",colnames(agg_demographic))+i)] <- agg_demographic[i]/agg_demographic[grep("tlt_people",colnames(agg_demographic))]
+  percents <- list()
+  for(i in first_demo_tobe_aggregated:last_demo_tobe_aggregated ){
+    percents[[i]] <- agg_demographic[i]/agg_demographic[grep("tlt_people",colnames(agg_demographic))]
   }
+  percents[sapply(percents, is.null)] <- NULL
+  percents <- as.data.frame(unlist(percents,recursive = FALSE))   
+  names(percents) <- gsub(x = names(percents), pattern = "sum_", replacement = "")  
+  names(percents) <- paste0("pr_",names(percents))
+  agg_demographic <- data.frame(agg_demographic,percents)
   #RENAME DEMOGRAPHIC PROPORTION INDICATORS
-   names(agg_demographic)[first_demo_tobe_aggregated:last_demo_tobe_aggregated] <- names(agg_demographic)[(ncol_agg_demo_sums+1):ncol(agg_demographic)] 
-  names(agg_demographic)[(ncol_agg_demo_sums+1):ncol(agg_demographic)] %<>%
-    gsub("sum_", "pr_", .) 
-  names(agg_demographic) <- names(agg_demographic) %<>%
-    gsub("\\.1", "", .)  
   ###STACK 
   last_attribute_index <- grep(group, colnames(agg_demographic))
   demo_names <- gsub("pr_", "",names(  agg_demographic[1, c(1:last_attribute_index, min( grep("pr_",colnames(agg_demographic))):ncol(agg_demographic))] ))
   pairz <- list()
   for(j in 1:nrow(agg_demographic)){
-    percents <- as.data.frame(agg_demographic[j, c(1:last_attribute_index, min( grep("pr_",colnames(agg_demographic))):ncol(agg_demographic))])
+    percents <- as.data.frame(agg_demographic[j, c(1:last_attribute_index, min( grep("pr_",colnames(agg_demographic))):ncol(agg_demographic),grep("tlt_people",colnames(agg_demographic)))])
     colnames(percents) <- demo_names
-    sums <- as.data.frame(agg_demographic[j, c(1:last_attribute_index, min( grep("sum_",colnames(agg_demographic))):(min( grep("tlt_people",colnames(agg_demographic)))-1))])
+    sums <- as.data.frame(agg_demographic[j, c(1:last_attribute_index, min( grep("sum_",colnames(agg_demographic))):(min( grep("tlt_people",colnames(agg_demographic)))-1),grep("tlt_people",colnames(agg_demographic)))])
     colnames(sums) <- demo_names
     binded <- rbind(sums, percents)
     pairz[[j]] <- binded
@@ -523,9 +520,9 @@ for(i in 1 :((last_demo_tobe_aggregated-first_demo_tobe_aggregated)+1) ){
   measure <- rep(measure, length(unique(pairz_unique_aggregation)))
   pairz <- cbind(pairz, measure)
   pairz <-  pairz[moveme(names(pairz), paste("measure", "before", first_demo_indicator, sep=" ") )]
+  colnames(pairz)[ncol(pairz)] <- "tlt_people"
   return(pairz)
 }
-
 
 ######PREPARE DATA FOR STATISTICAL TESTS--ASSIGN NUMERIC AND CATEGORICAL CATEGORIZATION######
 #dataa == dataset with indicators to aggregate
